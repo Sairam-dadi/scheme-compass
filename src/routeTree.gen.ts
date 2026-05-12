@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SchemesRouteImport } from './routes/schemes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SchemesIdRouteImport } from './routes/schemes.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -34,38 +35,46 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SchemesIdRoute = SchemesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SchemesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/schemes': typeof SchemesRoute
+  '/schemes': typeof SchemesRouteWithChildren
   '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/schemes': typeof SchemesRoute
+  '/schemes': typeof SchemesRouteWithChildren
   '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/schemes': typeof SchemesRoute
+  '/schemes': typeof SchemesRouteWithChildren
   '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/schemes' | '/signup'
+  fullPaths: '/' | '/login' | '/schemes' | '/signup' | '/schemes/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/schemes' | '/signup'
-  id: '__root__' | '/' | '/login' | '/schemes' | '/signup'
+  to: '/' | '/login' | '/schemes' | '/signup' | '/schemes/$id'
+  id: '__root__' | '/' | '/login' | '/schemes' | '/signup' | '/schemes/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  SchemesRoute: typeof SchemesRoute
+  SchemesRoute: typeof SchemesRouteWithChildren
   SignupRoute: typeof SignupRoute
 }
 
@@ -99,13 +108,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/schemes/$id': {
+      id: '/schemes/$id'
+      path: '/$id'
+      fullPath: '/schemes/$id'
+      preLoaderRoute: typeof SchemesIdRouteImport
+      parentRoute: typeof SchemesRoute
+    }
   }
 }
+
+interface SchemesRouteChildren {
+  SchemesIdRoute: typeof SchemesIdRoute
+}
+
+const SchemesRouteChildren: SchemesRouteChildren = {
+  SchemesIdRoute: SchemesIdRoute,
+}
+
+const SchemesRouteWithChildren =
+  SchemesRoute._addFileChildren(SchemesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  SchemesRoute: SchemesRoute,
+  SchemesRoute: SchemesRouteWithChildren,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
