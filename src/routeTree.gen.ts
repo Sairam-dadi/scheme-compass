@@ -9,38 +9,174 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SchemesRouteImport } from './routes/schemes'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as EligibilityRouteImport } from './routes/eligibility'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SchemesIdRouteImport } from './routes/schemes.$id'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchemesRoute = SchemesRouteImport.update({
+  id: '/schemes',
+  path: '/schemes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EligibilityRoute = EligibilityRouteImport.update({
+  id: '/eligibility',
+  path: '/eligibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SchemesIdRoute = SchemesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SchemesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/eligibility': typeof EligibilityRoute
+  '/login': typeof LoginRoute
+  '/schemes': typeof SchemesRouteWithChildren
+  '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/eligibility': typeof EligibilityRoute
+  '/login': typeof LoginRoute
+  '/schemes': typeof SchemesRouteWithChildren
+  '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/eligibility': typeof EligibilityRoute
+  '/login': typeof LoginRoute
+  '/schemes': typeof SchemesRouteWithChildren
+  '/signup': typeof SignupRoute
+  '/schemes/$id': typeof SchemesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/eligibility'
+    | '/login'
+    | '/schemes'
+    | '/signup'
+    | '/schemes/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/eligibility'
+    | '/login'
+    | '/schemes'
+    | '/signup'
+    | '/schemes/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/eligibility'
+    | '/login'
+    | '/schemes'
+    | '/signup'
+    | '/schemes/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  DashboardRoute: typeof DashboardRoute
+  EligibilityRoute: typeof EligibilityRoute
+  LoginRoute: typeof LoginRoute
+  SchemesRoute: typeof SchemesRouteWithChildren
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schemes': {
+      id: '/schemes'
+      path: '/schemes'
+      fullPath: '/schemes'
+      preLoaderRoute: typeof SchemesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eligibility': {
+      id: '/eligibility'
+      path: '/eligibility'
+      fullPath: '/eligibility'
+      preLoaderRoute: typeof EligibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +184,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/schemes/$id': {
+      id: '/schemes/$id'
+      path: '/$id'
+      fullPath: '/schemes/$id'
+      preLoaderRoute: typeof SchemesIdRouteImport
+      parentRoute: typeof SchemesRoute
+    }
   }
 }
 
+interface SchemesRouteChildren {
+  SchemesIdRoute: typeof SchemesIdRoute
+}
+
+const SchemesRouteChildren: SchemesRouteChildren = {
+  SchemesIdRoute: SchemesIdRoute,
+}
+
+const SchemesRouteWithChildren =
+  SchemesRoute._addFileChildren(SchemesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  DashboardRoute: DashboardRoute,
+  EligibilityRoute: EligibilityRoute,
+  LoginRoute: LoginRoute,
+  SchemesRoute: SchemesRouteWithChildren,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
