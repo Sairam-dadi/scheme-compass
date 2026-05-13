@@ -53,9 +53,30 @@ ${markdown.slice(0, 12000)}`;
   });
   if (!res.ok) throw new Error(`AI gateway ${res.status}: ${await res.text()}`);
   const json = await res.json();
-  const content = json.choices?.[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(content);
-  return SchemeExtract.parse(parsed).schemes;
+  const content: string = json.choices?.[0]?.message?.content ?? "{}";
+
+  // Robust JSON extraction — strip code fences, trim to outer braces.
+  let cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const start = cleaned.search(/[\{\[]/);
+  const end = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+  if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.slice(start, end + 1);
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    try {
+      parsed = JSON.parse(cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, ""));
+    } catch (e) {
+      console.warn("aiExtract: JSON parse failed", e, content.slice(0, 300));
+      return [];
+    }
+  }
+
+  // Tolerate either {schemes:[...]} or a bare array.
+  if (Array.isArray(parsed)) parsed = { schemes: parsed };
+  const safe = SchemeExtract.safeParse(parsed);
+  return safe.success ? safe.data.schemes : [];
 }
 
 export const scrapeSchemes = createServerFn({ method: "POST" })
@@ -79,14 +100,38 @@ export const scrapeSchemes = createServerFn({ method: "POST" })
       scrapeOptions: { formats: ["markdown"] },
     });
 
-    const results: any[] = (search as any).web ?? (search as any).data ?? [];
+    // Normalize Firecrawl SDK v2 response shape (web.results | web | data | results).
+    const raw: any = search ?? {};
+    const results: any[] =
+      (Array.isArray(raw?.web?.results) && raw.web.results) ||
+      (Array.isArray(raw?.web) && raw.web) ||
+      (Array.isArray(raw?.data) && raw.data) ||
+      (Array.isArray(raw?.results) && raw.results) ||
+      [];
+
     let inserted = 0, updated = 0, skipped = 0;
     const errors: string[] = [];
 
+    if (results.length === 0) {
+      return { inserted: 0, updated: 0, skipped: 0, scanned: 0, errors: ["No results from Firecrawl search"] };
+    }
+
     for (const r of results) {
       const url = r.url ?? r.link;
-      const md = r.markdown ?? r.content ?? r.description;
-      if (!url || !md) { skipped++; continue; }
+      let md: string | undefined = r.markdown ?? r.content ?? r.description;
+      if (!url) { skipped++; continue; }
+
+      // Fall back to per-URL scrape when search didn't return inline content.
+      if (!md) {
+        try {
+          const scraped: any = await firecrawl.scrape(url, { formats: ["markdown"], onlyMainContent: true });
+          md = scraped?.markdown ?? scraped?.data?.markdown;
+        } catch (e: any) {
+          errors.push(`scrape ${url}: ${e.message}`);
+        }
+      }
+      if (!md) { skipped++; continue; }
+
 
       try {
         const schemes = await aiExtract(md, url);

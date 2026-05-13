@@ -45,16 +45,25 @@ function AdminPage() {
     setScraping(true);
     try {
       const res = await runScrape({ data: { query: scrapeQuery || undefined, limit: 5 } });
-      toast.success(`Scraped ${res.scanned} pages — ${res.inserted} new, ${res.updated} updated`);
-      if (res.errors.length) console.warn("scrape errors", res.errors);
+      const inserted = res?.inserted ?? 0;
+      const updated = res?.updated ?? 0;
+      const scanned = res?.scanned ?? 0;
+      const errs = res?.errors ?? [];
+      if (inserted + updated > 0) {
+        toast.success(`Scraped ${scanned} page(s) — ${inserted} new, ${updated} updated`);
+      } else {
+        toast.error(errs[0] || `No schemes extracted from ${scanned} page(s)`);
+      }
+      if (errs.length) console.warn("scrape errors", errs);
       qc.invalidateQueries({ queryKey: ["admin-schemes"] });
       qc.invalidateQueries({ queryKey: ["schemes-all"] });
     } catch (e: any) {
-      toast.error(e.message || "Scrape failed");
+      toast.error(e?.message || "Scrape failed");
     } finally {
       setScraping(false);
     }
   };
+
 
   const { data: schemes } = useQuery({
     queryKey: ["admin-schemes"],
