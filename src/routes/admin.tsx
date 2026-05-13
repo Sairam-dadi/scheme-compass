@@ -158,6 +158,26 @@ function AdminPage() {
       </div>
 
       <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> Auto-fetch from the web</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Searches official Indian government sources, extracts schemes with AI, and adds or updates them in the database.</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              placeholder='e.g. "PM scholarship schemes 2026" (leave blank for general latest schemes)'
+              value={scrapeQuery}
+              onChange={(e) => setScrapeQuery(e.target.value)}
+              disabled={scraping}
+            />
+            <Button onClick={handleScrape} disabled={scraping} className="shrink-0">
+              {scraping ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Scraping…</> : <><Globe className="h-4 w-4 mr-1.5" />Fetch from web</>}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="text-base">All schemes</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
