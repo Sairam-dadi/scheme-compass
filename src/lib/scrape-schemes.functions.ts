@@ -53,9 +53,30 @@ ${markdown.slice(0, 12000)}`;
   });
   if (!res.ok) throw new Error(`AI gateway ${res.status}: ${await res.text()}`);
   const json = await res.json();
-  const content = json.choices?.[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(content);
-  return SchemeExtract.parse(parsed).schemes;
+  const content: string = json.choices?.[0]?.message?.content ?? "{}";
+
+  // Robust JSON extraction — strip code fences, trim to outer braces.
+  let cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const start = cleaned.search(/[\{\[]/);
+  const end = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+  if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.slice(start, end + 1);
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    try {
+      parsed = JSON.parse(cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, ""));
+    } catch (e) {
+      console.warn("aiExtract: JSON parse failed", e, content.slice(0, 300));
+      return [];
+    }
+  }
+
+  // Tolerate either {schemes:[...]} or a bare array.
+  if (Array.isArray(parsed)) parsed = { schemes: parsed };
+  const safe = SchemeExtract.safeParse(parsed);
+  return safe.success ? safe.data.schemes : [];
 }
 
 export const scrapeSchemes = createServerFn({ method: "POST" })
