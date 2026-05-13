@@ -33,10 +33,28 @@ function AdminPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
+  const [scrapeQuery, setScrapeQuery] = useState("");
+  const [scraping, setScraping] = useState(false);
+  const runScrape = useServerFn(scrapeSchemes);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate({ to: "/" });
   }, [loading, user, isAdmin, navigate]);
+
+  const handleScrape = async () => {
+    setScraping(true);
+    try {
+      const res = await runScrape({ data: { query: scrapeQuery || undefined, limit: 5 } });
+      toast.success(`Scraped ${res.scanned} pages — ${res.inserted} new, ${res.updated} updated`);
+      if (res.errors.length) console.warn("scrape errors", res.errors);
+      qc.invalidateQueries({ queryKey: ["admin-schemes"] });
+      qc.invalidateQueries({ queryKey: ["schemes-all"] });
+    } catch (e: any) {
+      toast.error(e.message || "Scrape failed");
+    } finally {
+      setScraping(false);
+    }
+  };
 
   const { data: schemes } = useQuery({
     queryKey: ["admin-schemes"],
