@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { INDIAN_STATES, SCHEME_CATEGORIES } from "@/lib/seed-data";
+import { scrapeSchemes } from "@/lib/scrape-schemes.functions";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Globe, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
@@ -31,10 +33,28 @@ function AdminPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
+  const [scrapeQuery, setScrapeQuery] = useState("");
+  const [scraping, setScraping] = useState(false);
+  const runScrape = useServerFn(scrapeSchemes);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate({ to: "/" });
   }, [loading, user, isAdmin, navigate]);
+
+  const handleScrape = async () => {
+    setScraping(true);
+    try {
+      const res = await runScrape({ data: { query: scrapeQuery || undefined, limit: 5 } });
+      toast.success(`Scraped ${res.scanned} pages — ${res.inserted} new, ${res.updated} updated`);
+      if (res.errors.length) console.warn("scrape errors", res.errors);
+      qc.invalidateQueries({ queryKey: ["admin-schemes"] });
+      qc.invalidateQueries({ queryKey: ["schemes-all"] });
+    } catch (e: any) {
+      toast.error(e.message || "Scrape failed");
+    } finally {
+      setScraping(false);
+    }
+  };
 
   const { data: schemes } = useQuery({
     queryKey: ["admin-schemes"],
@@ -136,6 +156,26 @@ function AdminPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> Auto-fetch from the web</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Searches official Indian government sources, extracts schemes with AI, and adds or updates them in the database.</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              placeholder='e.g. "PM scholarship schemes 2026" (leave blank for general latest schemes)'
+              value={scrapeQuery}
+              onChange={(e) => setScrapeQuery(e.target.value)}
+              disabled={scraping}
+            />
+            <Button onClick={handleScrape} disabled={scraping} className="shrink-0">
+              {scraping ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Scraping…</> : <><Globe className="h-4 w-4 mr-1.5" />Fetch from web</>}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">All schemes</CardTitle></CardHeader>
